@@ -11,11 +11,19 @@ Development environment based on Fedora in Docker container.
 
 ### Making data persist between sessions
 
-The data is usually persisted in the home directory of an user, so if you want to persist the data for a later session you have to share it with your host:
+The data is usually persisted in the home directory of an user, so if you want to persist the data for a later session you have to share it with your host.
+The home directory `/home/default` inside the container is mapped to the directory `.home` that is stored in the working directory.
 
-For example:
-```
+For example for the working directory `~/work` that caches the container home directory in `~/work/.home`:
+``` bash
+mkdir -p ~/work
+cd ~/work
 mkdir -p .home
+
+```
+
+the docker run command will look like:
+``` bash
 docker run -it --rm --net=host \
     -e USER=$(id -u -n) -e GROUP=$(id -g -n) -u "$(id -u):$(id -g)" \
     -v $PWD:/workspace \
