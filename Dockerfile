@@ -6,7 +6,10 @@ ENV GROUP default
 ENV HOME /home/default
 ENV TERM xterm
 
-RUN dnf install -y nss_wrapper procps htop git mc vim mlocate iproute hostname net-tools bind-utils make ed tar\
+RUN dnf -y install nss_wrapper procps htop mc mlocate tar \
+    git make ed vim \
+    iproute hostname net-tools bind-utils \
+    libXext libXrender libXtst freetype fontconfig \
     && dnf clean all
 
 # add developer user
