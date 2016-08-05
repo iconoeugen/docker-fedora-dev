@@ -17,6 +17,9 @@ function usage {
   printf "  -e <key>[=<value>] : environments parameters which should be passed to the docker instance.\n"
   printf "  -u <user> : Username.\n"
   printf "  -h        : This help message.\n"
+  printf "\n"
+  printf "ENVIRONMENT:\n"
+  printf "  DEV_DOCKER_OPTIONS: Options that are passed directly to the docker 'run' command. i.e. DEV_DOCKER_OPTIONS='-e BASH_IT_THEME=modern -v /tmp:/tmp'\n"
 }
 
 function initialize {
@@ -140,7 +143,7 @@ function docker-run() {
   [ ! "x$image_name" = "x" ] && >&2 printf "Container '$image_name' for image '${DOCKER_IMAGE}' already running in working directory '${WORKING_DIR}'.\nUse command '$0 exec ${DOCKER_IMAGE} ${WORKING_DIR}' to enter running container.\n" && exit 1
 
   mkdir -p ${WORKING_DIR}/.home
-  docker run -it --rm --net=host \
+  docker run -it --rm --net=host ${DEV_DOCKER_OPTIONS} \
     -e USER=$(id -u -n ${DOCKER_USER}) -e GROUP=$(id -g -n ${DOCKER_USER}) -u "$(id -u ${DOCKER_USER}):$(id -g ${DOCKER_USER})" \
     -v ${WORKING_DIR}:/workspace \
     -v ${WORKING_DIR}/.home:/home/default \
@@ -152,7 +155,7 @@ function docker-run() {
 }
 
 function docker-exec() {
-  local image_name=$(find_image_name ${DOCKER_IMAGE} ${WORKING_DIR}) 
+  local image_name=$(find_image_name ${DOCKER_IMAGE} ${WORKING_DIR})
 
   [ "x$image_name" = "x" ] && >&2 echo "No container found for image '${DOCKER_IMAGE}' running in working directory '${WORKING_DIR}'." && exit 1
 
@@ -160,7 +163,7 @@ function docker-exec() {
 }
 
 function docker-ps() {
-  local image_name=$(find_image_name ${DOCKER_IMAGE} ${WORKING_DIR}) 
+  local image_name=$(find_image_name ${DOCKER_IMAGE} ${WORKING_DIR})
 
   [ "x$image_name" = "x" ] && >&2 echo "No container found for image '${DOCKER_IMAGE}' running in working directory '${WORKING_DIR}'." && exit 1
 

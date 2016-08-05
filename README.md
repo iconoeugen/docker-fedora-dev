@@ -58,6 +58,9 @@ Options:
   -e <key>[=<value>] : environments parameters which should be passed to the docker instance.
   -u <user> : Username.
   -h        : This help message.
+
+ENVIRONMENT:
+  DEV_DOCKER_OPTS: Options that are passed directly to the docker 'run' command. i.e. DEV_DOCKER_OPT='-e BASH_IT_THEME=modern -v /tmp:/tmp'\n"
 ```
 
 ### Usage example
@@ -124,4 +127,19 @@ $ cd /home/dev/github/iconoeugen/docker-fedora-dev
 $ dev ps iconoeugen/fedora-dev
 CONTAINER ID        IMAGE                   COMMAND                  CREATED             STATUS              PORTS               NAMES
 969c9d041e31        iconoeugen/fedora-dev   "/entrypoint.sh /bin/"   8 minutes ago       Up 8 minutes                            evil_bohr
+```
+
+Environment configuration:
+
+```
+$ unset DEV_DOCKER_OPTIONS
+$ dev run iconoeugen/fedora-dev
+Activating nss_wrapper for dev:dev
+[dev@localhost workspace]$ exit
+
+$ export DEV_DOCKER_OPTIONS='-e BASH_IT_THEME=modern'
+$ dev run iconoeugen/fedora-dev
+Activating nss_wrapper for dev:dev
+┌─[±][master ?:2 ✗][workspace][]
+└─▪ exit
 ```

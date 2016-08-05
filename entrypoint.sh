@@ -10,7 +10,7 @@ if [[ $USER_ID -ne 0 ]] ; then
         -e "s/wheel:\([^:]*:[^:]*\):.*/wheel:\1:${USER}/" > /tmp/group
 fi
 
-cp -u -v /etc/skel/.bash* ${HOME}/
+cp -u /etc/skel/.bash* ${HOME}/
 . ${HOME}/.bashrc
 
 exec "$@"
