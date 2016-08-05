@@ -9,7 +9,7 @@ Development environment based on Fedora in Docker container.
 
 ## Quickstart
 
-## Making data persist between sessions
+### Making data persist between sessions
 
 The data is usually persisted in the home directory of an user, so if you want to persist the data for a later session you have to share it with your host:
 
@@ -25,6 +25,16 @@ docker run -it --rm --net=host \
     -v /dev/shm:/dev/shm \
     iconoeugen/fedora-dev /bin/bash
 ```
+
+### bash-it
+
+The development environment includes the [bash-it](https://github.com/Bash-it/bash-it/) framework. To configure the appearance you can provide 
+the following environment to the docker container:
+
+- **BASH_IT_ENABLE**: Set this to `false` to disable or to `true` to enable the bash-it framework (Defaults: **true**)
+- **BASH_IT**: Path to the bash it configuration (Defauts: **/opt/bash-it**)
+- **BASH_IT_THEME**: Lock and Load a custom theme file (Defaults: **standard**)
+- **SCM_CHECK**: Set this to `false` to turn off or `true` the version control status checking within the prompt for all themes (Defaults: **true**)
 
 ## Support tools
 
