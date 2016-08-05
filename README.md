@@ -34,7 +34,7 @@ For an easier use of docker images for developemnt environment, you can just add
 $ dev -h
 Development environment in docker containers
 Synopsys:
-  dev [-h] [-d <working_directory>] [-e <key=value>] <command> <image> [<commands>]
+  dev [-h] [-u <user>] [-d <working_directory>] [-e <key=value>] <command> <image> [<commands>]
 
 Arguments:
   <command> : Command to be executed:
@@ -46,6 +46,7 @@ Arguments:
 Options:
   -d <working_dir> : Working directory that will be mounted in the development container under '/workspace'.
   -e <key>[=<value>] : environments parameters which should be passed to the docker instance.
+  -u <user> : Username.
   -h        : This help message.
 ```
 

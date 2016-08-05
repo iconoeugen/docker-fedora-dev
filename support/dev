@@ -3,7 +3,7 @@
 function usage {
   printf "Development environment in docker containers\n"
   printf "Synopsys:\n"
-  printf "  $0 [-h] [-d <working_directory>] [-e <key=value>] <command> <image> [<commands>] \n"
+  printf "  $0 [-h] [-u <user>] [-d <working_directory>] [-e <key=value>] <command> <image> [<commands>] \n"
   printf "\n"
   printf "Arguments:\n"
   printf "  <command> : Command to be executed:\n"
@@ -15,6 +15,7 @@ function usage {
   printf "Options:\n"
   printf "  -d <working_dir> : Working directory that will be mounted in the development container under '/workspace'.\n"
   printf "  -e <key>[=<value>] : environments parameters which should be passed to the docker instance.\n"
+  printf "  -u <user> : Username.\n"
   printf "  -h        : This help message.\n"
 }
 
@@ -22,6 +23,7 @@ function initialize {
   unset CMD_NAME
   unset DOCKER_IMAGE
   unset DOCKER_COMMAND
+  unset DOCKER_USER
 
   WORKING_DIR=$PWD
   DOCKER_ENV=""
@@ -36,7 +38,7 @@ function parse_args # [args ...]
 #  fi
 
   typeset opt
-  while getopts 'hd:e:' opt ; do
+  while getopts 'hd:e:u:' opt ; do
     case "$opt" in
       h)
         usage
@@ -47,6 +49,9 @@ function parse_args # [args ...]
         ;;
       e)
         DOCKER_ENV+=" -e $OPTARG"
+        ;;
+      u)
+        DOCKER_USER=$OPTARG
         ;;
       *)
         >&2 echo "Invalid option '-$opt'"
@@ -136,7 +141,7 @@ function docker-run() {
 
   mkdir -p ${WORKING_DIR}/.home
   docker run -it --rm --net=host \
-    -e USER=$(id -u -n) -e GROUP=$(id -g -n) -u "$(id -u):$(id -g)" \
+    -e USER=$(id -u -n ${DOCKER_USER}) -e GROUP=$(id -g -n ${DOCKER_USER}) -u "$(id -u ${DOCKER_USER}):$(id -g ${DOCKER_USER})" \
     -v ${WORKING_DIR}:/workspace \
     -v ${WORKING_DIR}/.home:/home/default \
     -v ~/.ssh:/home/default/.ssh \
@@ -151,7 +156,7 @@ function docker-exec() {
 
   [ "x$image_name" = "x" ] && >&2 echo "No container found for image '${DOCKER_IMAGE}' running in working directory '${WORKING_DIR}'." && exit 1
 
-  docker exec -it $image_name ${DOCKER_COMMAND:-/bin/bash}
+  docker exec -it ${DOCKER_USER:+-u ${DOCKER_USER}} ${image_name} ${DOCKER_COMMAND:-/bin/bash}
 }
 
 function docker-ps() {
