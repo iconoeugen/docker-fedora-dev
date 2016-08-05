@@ -5,7 +5,7 @@ ENV USER default
 ENV GROUP default
 ENV HOME /home/default
 
-RUN dnf install -y nss_wrapper sudo git mc vim mlocate net-tools bind-utils make ed tar\
+RUN dnf install -y nss_wrapper procps htop git mc vim mlocate net-tools bind-utils make ed tar\
     && dnf clean all
 
 # add developer user
