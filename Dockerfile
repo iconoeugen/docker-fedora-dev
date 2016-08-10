@@ -8,7 +8,7 @@ ENV TERM xterm
 
 RUN dnf -y install nss_wrapper procps htop mc mlocate tar \
     git make ed vim \
-    iproute hostname net-tools bind-utils \
+    iproute hostname net-tools bind-utils telnet \
     libXext libXrender libXtst freetype fontconfig \
     && dnf clean all
 
