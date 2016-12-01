@@ -22,6 +22,11 @@ function usage {
   printf "  DEV_DOCKER_OPTIONS: Options that are passed directly to the docker 'run' command. i.e. DEV_DOCKER_OPTIONS='-e BASH_IT_THEME=modern -v /tmp:/tmp'\n"
 }
 
+function failed {
+  >&2 echo -e "$@"
+  exit 1
+}
+
 function initialize {
   unset CMD_NAME
   unset DOCKER_IMAGE
@@ -64,21 +69,13 @@ function parse_args # [args ...]
   done
 
   shift $((OPTIND -1))
-  if [ $# -ge 1 ]; then
-    CMD_NAME=$1
-    shift
-  else
-    >&2 echo "Missing argument <command>."
-    exit 1
-  fi
+  [ $# -lt 1 ] && failed "Missing argument <command>."
+  CMD_NAME=$1
+  shift
 
-  if [ $# -ge 1 ]; then
-    DOCKER_IMAGE=$1
-    shift
-  else
-    >&2 echo "Missing argument <image>."
-    exit 1
-  fi
+  [ $# -lt 1 ] && failed "Missing argument <image>."
+  DOCKER_IMAGE=$1
+  shift
 
   # Make sure all remaining args are passed to docker as command
   if [ $# -ne 0 ] ; then
@@ -109,23 +106,16 @@ function ask_yes {
   return 1
 }
 
-
-#alias dev-exec-docker='docker exec -it $(docker ps -q | xargs --no-run-if-empty docker inspect --format "{{ if eq .Config.Image \"${DEV_DOCKER_IMAGE:-iconoeugen/fedora-dev}\" }}{{ range .Mounts }}{{ if eq .Source \"$PWD\" }}{{ $.ID }}{{ end }}{{ end }}{{ end }}") /bin/bash'
-
-
-#alias dev-run-ruby='export DEV_DOCKER_IMAGE=iconoeugen/ruby-dev && dev-run-docker'
-#alias dev-exec-ruby='export DEV_DOCKER_IMAGE=iconoeugen/ruby-dev && dev-exec-docker'
-
-#export GITLAB_REPO=https://gitlab.com/hvlad/gitlab-ce.git
-#alias dev-run-gitlab='export DEV_DOCKER_OPTIONS="-e GITLAB_REPO=${GITLAB_REPO}" && export DEV_DOCKER_IMAGE=iconoeugen/gitlab-dev && dev-run-docker'
-#alias dev-exec-gitlab='export DEV_DOCKER_OPTIONS="-e GITLAB_REPO=${GITLAB_REPO}" && export DEV_DOCKER_IMAGE=iconoeugen/gitlab-dev && dev-exec-docker'
-
 function find_image_id() {
     local docker_image=$1
     local working_dir=$2
     local image_id=$(docker ps -q | xargs --no-run-if-empty docker inspect --format "{{ if eq .Config.Image \"${docker_image}\" }}{{ range .Mounts }}{{ if eq .Source \"${working_dir}\" }}{{ $.ID }}{{ end }}{{ end }}{{ end }}")
 
-    [ -n $image_id ] && echo $image_id && return 0 || return 1
+    # no image found
+    [ -z $image_id ] && return 1
+
+    echo $image_id
+    return 0
 }
 
 function find_image_name() {
@@ -134,13 +124,17 @@ function find_image_name() {
     local image_name=$(docker ps -q | xargs --no-run-if-empty docker inspect --format "{{ if eq .Config.Image \"${docker_image}\" }}{{ range .Mounts }}{{ if eq .Source \"${working_dir}\" }}{{ $.Name }}{{ end }}{{ end }}{{ end }}")
     image_name=${image_name:1}
 
-    [ -n $image_id ] && echo $image_name && return 0 || return 1
+    # no image found
+    [ -z $image_name ] && return 1
+    
+    echo $image_name
+    return 0
 }
 
 function docker-run() {
   local image_name=$(find_image_name ${DOCKER_IMAGE} ${WORKING_DIR})
 
-  [ ! "x$image_name" = "x" ] && >&2 printf "Container '$image_name' for image '${DOCKER_IMAGE}' already running in working directory '${WORKING_DIR}'.\nUse command '$0 exec ${DOCKER_IMAGE} ${WORKING_DIR}' to enter running container.\n" && exit 1
+  [ ! "x$image_name" = "x" ] && failed "Container '$image_name' for image '${DOCKER_IMAGE}' already running in working directory '${WORKING_DIR}'.\nUse command '$0 exec ${DOCKER_IMAGE} ${WORKING_DIR}' to enter running container.\n"
 
   mkdir -p ${WORKING_DIR}/.home
   docker run -it --rm --net=host ${DEV_DOCKER_OPTIONS} \
@@ -157,7 +151,7 @@ function docker-run() {
 function docker-exec() {
   local image_name=$(find_image_name ${DOCKER_IMAGE} ${WORKING_DIR})
 
-  [ "x$image_name" = "x" ] && >&2 echo "No container found for image '${DOCKER_IMAGE}' running in working directory '${WORKING_DIR}'." && exit 1
+  [ "x$image_name" = "x" ] && failed "No container found for image '${DOCKER_IMAGE}' running in working directory '${WORKING_DIR}'."
 
   docker exec -it ${DOCKER_USER:+-u ${DOCKER_USER}} ${image_name} ${DOCKER_COMMAND:-/bin/bash}
 }
@@ -165,7 +159,7 @@ function docker-exec() {
 function docker-ps() {
   local image_name=$(find_image_name ${DOCKER_IMAGE} ${WORKING_DIR})
 
-  [ "x$image_name" = "x" ] && >&2 echo "No container found for image '${DOCKER_IMAGE}' running in working directory '${WORKING_DIR}'." && exit 1
+  [ "x$image_name" = "x" ] && failed "No container found for image '${DOCKER_IMAGE}' running in working directory '${WORKING_DIR}'."
 
   docker ps --filter "name=$image_name"
 }
@@ -185,7 +179,7 @@ case "${CMD_NAME}" in
     docker-ps
     ;;
   *)
-    >&2 echo "Unknown command: '${CMD_NAME}'"
+    >&2 echo "Unknown command: '${CMD_NAME}'\n"
     usage
     exit 1
 esac
