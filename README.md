@@ -15,14 +15,15 @@ The data is usually persisted in the home directory of an user, so if you want t
 The home directory `/home/default` inside the container is mapped to the directory `.home` that is stored in the working directory.
 
 For example for the working directory `~/work` that caches the container home directory in `~/work/.home`:
+
 ``` bash
 mkdir -p ~/work
 cd ~/work
 mkdir -p .home
-
 ```
 
 the docker run command will look like:
+
 ``` bash
 docker run -it --rm --net=host \
     -e USER=$(id -u -n) -e GROUP=$(id -g -n) -u "$(id -u):$(id -g)" \
@@ -36,7 +37,7 @@ docker run -it --rm --net=host \
 
 ### bash-it
 
-The development environment includes the [bash-it](https://github.com/Bash-it/bash-it/) framework. To configure the appearance you can provide 
+The development environment includes the [bash-it](https://github.com/Bash-it/bash-it/) framework. To configure the appearance you can provide
 the following environment to the docker container:
 
 - **BASH_IT_ENABLE**: Set this to `false` to disable or to `true` to enable the bash-it framework (Defaults: **true**)
@@ -52,10 +53,10 @@ For an easier use of docker images for developemnt environment, you can just add
 $ dev -h
 Development environment in docker containers
 Synopsys:
-  dev [-h] [-u <user>] [-d <working_directory>] [-e <key=value>] <command> <image> [<commands>]
+  dev <action> [-h] [-u <user>] [-d <working_directory>] [-e <key=value>]  <image> [<commands>]
 
 Arguments:
-  <command> : Command to be executed:
+  <action> : Action to be executed:
     run     : run a new container instance.
     exec    : execute <commands> in running instance.
     ps      : process status for running instances.
@@ -65,6 +66,8 @@ Options:
   -d <working_dir> : Working directory that will be mounted in the development container under '/workspace'.
   -e <key>[=<value>] : environments parameters which should be passed to the docker instance.
   -u <user> : Username.
+  -p <publish_port>  : Publish a container’s port(s) to the host passed on to docker command.
+  -P                 : Automatically map any network port passed on to docker command.
   -h        : This help message.
 
 ENVIRONMENT:
