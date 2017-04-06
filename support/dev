@@ -3,10 +3,10 @@
 function usage {
   printf "Development environment in docker containers\n"
   printf "Synopsys:\n"
-  printf "  $0 [-h] [-u <user>] [-d <working_directory>] [-e <key=value>] <command> <image> [<commands>] \n"
+  printf "  $0 <action> [-h] [-u <user>] [-d <working_directory>] [-e <key=value>] [-p <publish_port>] <image> [<command>] \n"
   printf "\n"
   printf "Arguments:\n"
-  printf "  <command> : Command to be executed:\n"
+  printf "  <action> : Action to be executed:\n"
   printf "    run     : run a new container instance.\n"
   printf "    exec    : execute <commands> in running instance.\n"
   printf "    ps      : process status for running instances.\n"
@@ -15,6 +15,8 @@ function usage {
   printf "Options:\n"
   printf "  -d <working_dir> : Working directory that will be mounted in the development container under '/workspace'.\n"
   printf "  -e <key>[=<value>] : environments parameters which should be passed to the docker instance.\n"
+  printf "  -p <publish_port>  : Publish a container’s port(s) to the host passed on to docker command.\n"
+  printf "  -P                 : Automatically map any network port passed on to docker command.\n"
   printf "  -u <user> : Username.\n"
   printf "  -h        : This help message.\n"
   printf "\n"
@@ -28,13 +30,14 @@ function failed {
 }
 
 function initialize {
-  unset CMD_NAME
-  unset DOCKER_IMAGE
+  unset CMD_ACTION
+  CMD_DOCKER_OPTIONS=""
+  unset CMD_DOCKER_IMAGE
   unset DOCKER_COMMAND
-  unset DOCKER_USER
+  unset CMD_DOCKER_USER
 
-  WORKING_DIR=$PWD
-  DOCKER_ENV=""
+  CMD_WORKING_DIR=$PWD
+  CMD_DOCKER_ENV=""
 }
 
 function parse_args # [args ...]
@@ -45,21 +48,31 @@ function parse_args # [args ...]
 #    exit 1
 #  fi
 
+  [ $# -lt 1 ] && >&2 echo "Missing argument <action>." && exit 1
+  CMD_ACTION=$1
+  shift
+
   typeset opt
-  while getopts 'hd:e:u:' opt ; do
+  while getopts 'hd:e:u:Pp:' opt ; do
     case "$opt" in
       h)
         usage
         exit 0
         ;;
       d)
-        WORKING_DIR=$OPTARG
+        CMD_WORKING_DIR=$OPTARG
         ;;
       e)
-        DOCKER_ENV+=" -e $OPTARG"
+        CMD_DOCKER_ENV+=" -e $OPTARG"
         ;;
       u)
-        DOCKER_USER=$OPTARG
+        CMD_DOCKER_USER=$OPTARG
+        ;;
+      P)
+        CMD_DOCKER_OPTIONS+=" -P"
+        ;;
+      p)
+        CMD_DOCKER_OPTIONS+=" -p $opt"
         ;;
       *)
         >&2 echo "Invalid option '-$opt'"
@@ -69,12 +82,8 @@ function parse_args # [args ...]
   done
 
   shift $((OPTIND -1))
-  [ $# -lt 1 ] && failed "Missing argument <command>."
-  CMD_NAME=$1
-  shift
-
-  [ $# -lt 1 ] && failed "Missing argument <image>."
-  DOCKER_IMAGE=$1
+  [ $# -lt 1 ] && >&2 echo "Missing argument <image>." && exit 1
+  CMD_DOCKER_IMAGE="$1"
   shift
 
   # Make sure all remaining args are passed to docker as command
@@ -111,11 +120,9 @@ function find_image_id() {
     local working_dir=$2
     local image_id=$(docker ps -q | xargs --no-run-if-empty docker inspect --format "{{ if eq .Config.Image \"${docker_image}\" }}{{ range .Mounts }}{{ if eq .Source \"${working_dir}\" }}{{ $.ID }}{{ end }}{{ end }}{{ end }}")
 
-    # no image found
-    [ -z $image_id ] && return 1
+    [[ -z "$image_id" ]] && return 1
 
     echo $image_id
-    return 0
 }
 
 function find_image_name() {
@@ -124,42 +131,46 @@ function find_image_name() {
     local image_name=$(docker ps -q | xargs --no-run-if-empty docker inspect --format "{{ if eq .Config.Image \"${docker_image}\" }}{{ range .Mounts }}{{ if eq .Source \"${working_dir}\" }}{{ $.Name }}{{ end }}{{ end }}{{ end }}")
     image_name=${image_name:1}
 
-    # no image found
-    [ -z $image_name ] && return 1
-    
+    [[ -z "$image_name" ]] && return 1
+
     echo $image_name
-    return 0
 }
 
-function docker-run() {
-  local image_name=$(find_image_name ${DOCKER_IMAGE} ${WORKING_DIR})
+function docker_run() {
+  local image_name="$(find_image_name ${CMD_DOCKER_IMAGE} ${CMD_WORKING_DIR})"
 
-  [ ! "x$image_name" = "x" ] && failed "Container '$image_name' for image '${DOCKER_IMAGE}' already running in working directory '${WORKING_DIR}'.\nUse command '$0 exec ${DOCKER_IMAGE} ${WORKING_DIR}' to enter running container.\n"
+  [[ -n $image_name ]] && >&2 printf "Container '$image_name' for image '${CMD_DOCKER_IMAGE}' already running in working directory '${CMD_WORKING_DIR}'.\nUse command '$0 exec ${CMD_DOCKER_IMAGE} ${CMD_WORKING_DIR}' to enter running container.\n" && exit 1
 
-  mkdir -p ${WORKING_DIR}/.home
-  docker run -it --rm --net=host ${DEV_DOCKER_OPTIONS} \
-    -e USER=$(id -u -n ${DOCKER_USER}) -e GROUP=$(id -g -n ${DOCKER_USER}) -u "$(id -u ${DOCKER_USER}):$(id -g ${DOCKER_USER})" \
-    -v ${WORKING_DIR}:/workspace \
-    -v ${WORKING_DIR}/.home:/home/default \
+  mkdir -p ${CMD_WORKING_DIR}/.home
+  docker run -it --rm --net=host ${CMD_DOCKER_OPTIONS} ${DEV_DOCKER_OPTIONS} \
+    -e USER="$(id -u -n ${CMD_DOCKER_USER})" -e GROUP="$(id -g -n ${CMD_DOCKER_USER})" -u "$(id -u ${CMD_DOCKER_USER}):$(id -g ${CMD_DOCKER_USER})" \
+    -v "${CMD_WORKING_DIR}:/workspace" \
+    -v "${CMD_WORKING_DIR}/.home:/home/default" \
     -v ~/.ssh:/home/default/.ssh \
-    -e DISPLAY=${DISPLAY} \
+    -e DISPLAY="${DISPLAY}" \
     -v ~/.Xauthority:/home/default/.Xauthority \
     -v /dev/shm:/dev/shm \
-    ${DOCKER_ENV} ${DOCKER_IMAGE} ${DOCKER_COMMAND}
+    ${CMD_DOCKER_ENV} ${CMD_DOCKER_IMAGE} ${DOCKER_COMMAND}
 }
 
-function docker-exec() {
-  local image_name=$(find_image_name ${DOCKER_IMAGE} ${WORKING_DIR})
+function docker_exec() {
+  local image_name="$(find_image_name ${CMD_DOCKER_IMAGE} ${CMD_WORKING_DIR})"
 
-  [ "x$image_name" = "x" ] && failed "No container found for image '${DOCKER_IMAGE}' running in working directory '${WORKING_DIR}'."
+  if [[ -z "$image_name" ]]; then
+    >&2 echo "No container found for image '${CMD_DOCKER_IMAGE}' running in working directory '${CMD_WORKING_DIR}'."
+    exit 1
+  fi
 
-  docker exec -it ${DOCKER_USER:+-u ${DOCKER_USER}} ${image_name} ${DOCKER_COMMAND:-/bin/bash}
+  docker exec -it ${CMD_DOCKER_USER:+-u ${CMD_DOCKER_USER}} ${image_name} ${DOCKER_COMMAND:-/bin/bash}
 }
 
-function docker-ps() {
-  local image_name=$(find_image_name ${DOCKER_IMAGE} ${WORKING_DIR})
+function docker_ps() {
+  local image_name="$(find_image_name ${CMD_DOCKER_IMAGE} ${CMD_WORKING_DIR})"
 
-  [ "x$image_name" = "x" ] && failed "No container found for image '${DOCKER_IMAGE}' running in working directory '${WORKING_DIR}'."
+  if [[ -z "$image_name" ]]; then
+    >&2 echo "No container found for image '${CMD_DOCKER_IMAGE}' running in working directory '${CMD_WORKING_DIR}'."
+    exit 1
+  fi
 
   docker ps --filter "name=$image_name"
 }
@@ -168,18 +179,18 @@ initialize
 
 parse_args "$@"
 
-case "${CMD_NAME}" in 
+case "${CMD_ACTION}" in
   run)
-    docker-run
+    docker_run
     ;;
   exec)
-    docker-exec
+    docker_exec
     ;;
   ps)
-    docker-ps
+    docker_ps
     ;;
   *)
-    >&2 echo "Unknown command: '${CMD_NAME}'\n"
+    >&2 echo "Unknown action: '${CMD_ACTION}'"
     usage
     exit 1
 esac
