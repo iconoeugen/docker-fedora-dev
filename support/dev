@@ -72,7 +72,7 @@ function parse_args # [args ...]
         CMD_DOCKER_OPTIONS+=" -P"
         ;;
       p)
-        CMD_DOCKER_OPTIONS+=" -p $opt"
+        CMD_DOCKER_OPTIONS+=" -p $OPTARG"
         ;;
       *)
         >&2 echo "Invalid option '-$opt'"
