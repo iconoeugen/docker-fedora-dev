@@ -6,7 +6,7 @@ ENV GROUP default
 ENV HOME /home/default
 ENV TERM xterm
 
-RUN dnf -y install nss_wrapper procps htop mc mlocate wget tar \
+RUN dnf -y install nss_wrapper procps htop mc mlocate wget tar bzip2 \
     git make ed vim \
     iproute hostname net-tools bind-utils telnet \
     libXext libXrender libXtst freetype fontconfig \
