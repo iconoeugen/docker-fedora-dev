@@ -10,6 +10,7 @@ RUN dnf -y install nss_wrapper procps htop mc mlocate wget tar bzip2 \
     git make ed vim \
     iproute hostname net-tools bind-utils telnet \
     libXext libXrender libXtst freetype fontconfig \
+    libcurl-devel openssl-devel \
     && dnf clean all
 
 # add developer user
