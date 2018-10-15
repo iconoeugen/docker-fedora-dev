@@ -1,5 +1,7 @@
 #!/bin/bash
 
+[[ $DEBUG =~ (1|true) ]] && set -x
+
 USER_ID=$(id -u)
 GROUP_ID=$(id -g)
 if [[ $USER_ID -ne 0 ]] ; then

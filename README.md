@@ -44,6 +44,7 @@ the following environment to the docker container:
 - **BASH_IT**: Path to the bash it configuration (Defauts: **/opt/bash-it**)
 - **BASH_IT_THEME**: Lock and Load a custom theme file (Defaults: **standard**)
 - **SCM_CHECK**: Set this to `false` to turn off or `true` the version control status checking within the prompt for all themes (Defaults: **true**)
+- **DEBUG**: Start entrypoint script using `set -x` flag
 
 ## Support tools
 
