@@ -1,4 +1,4 @@
-FROM fedora:28
+FROM fedora:27
 MAINTAINER info@vlad.eu
 
 ENV USER default
@@ -8,10 +8,10 @@ ENV TERM xterm
 
 RUN dnf -y update && \
     dnf -y install nss_wrapper procps htop mc mlocate wget tar bzip2 \
-    git make ed vim \
-    iproute hostname net-tools bind-utils telnet \
-    libXext libXrender libXtst re2-devel freetype fontconfig \
-    libcurl-devel openssl-devel \
+        git make ed vim \
+        iproute hostname net-tools bind-utils telnet \
+        libXext libXrender libXtst re2-devel freetype fontconfig \
+        libcurl-devel openssl-devel \
     && dnf clean all
 
 # add developer user
