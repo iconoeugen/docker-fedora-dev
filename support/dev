@@ -103,7 +103,7 @@ function parse_args # [args ...]
   done
   shift $((OPTIND -1))
 
-  [ $# -ne 0 ] || CMD_DOCKER_IMAGE="$1" && shift
+  [ $# -ne 0 ] && CMD_DOCKER_IMAGE="$1" && shift
 
   # Make sure all remaining args are passed to docker as command
   if [ $# -ne 0 ] ; then
